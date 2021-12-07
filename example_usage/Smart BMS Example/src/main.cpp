@@ -70,10 +70,11 @@ class command{
     uint8_t read_or_write;
     Vector<uint8_t> data_stack;
     uint8_t data_length;
-    uint8_t data_checksum;
+    uint16_t data_checksum;
+    uint8_t register_address;
     
     void updateChecksum() {
-      uint8_t vectorSum = 0;
+      uint8_t vectorSum = register_address;
       for (unsigned int i = 0; i < data_stack.size(); i++) {
         vectorSum += data_stack.at(i);
       }
@@ -87,6 +88,61 @@ class command{
     data_stack.setStorage(storage_array);
 
     read_or_write = read_write;
+  }
+
+  void sendCommand(){
+    uint8_t message_length = 0;
+
+    // Start byte
+    message_length ++;
+
+    // Read or write
+    message_length ++;
+
+    // Payload length
+    message_length ++;
+
+    // Payload
+    message_length += data_length;
+
+    // Checksum
+    message_length +=2;
+
+    // End Byte
+    message_length++;
+
+    // Construct message
+    uint8_t message[message_length];
+    message[0] = START;
+    message[1] = read_or_write;
+    message[2] = data_length;
+
+    // add payload data to message
+    uint8_t data_index = 3;
+    for (unsigned int i = 0; i < data_length; i++) {
+      message[data_index] = data_stack.back();
+      data_stack.pop_back();
+      data_index++;
+    }
+
+    uint8_t checksum_one, checksum_two;
+    union {
+      uint16_t Word;
+      uint8_t Bytes[2];
+    } both;
+
+    both.Word = data_checksum;
+    checksum_one = both.Bytes[0];
+    checksum_two = both.Bytes[1];
+
+    message[data_index + 1] = checksum_one;
+    message[data_index + 2] = checksum_two;
+    message[data_index + 3] = END;
+  }
+
+  void setRegister(uint8_t address) {
+    register_address = address;
+    updateChecksum();
   }
 
   void setData() {
@@ -142,6 +198,4 @@ class command{
 
     updateChecksum();
   }
-
-
 };
