@@ -139,6 +139,8 @@ class command{
     message[data_index + 1] = checksum_one;
     message[data_index + 2] = checksum_two;
     message[data_index + 3] = END;
+
+    BMSSerial.write(message, message_length);
   }
 
   void setRegister(uint8_t address) {
