@@ -115,10 +115,11 @@ class command{
     uint8_t message[message_length];
     message[0] = START;
     message[1] = read_or_write;
-    message[2] = data_length;
+    message[2] = register_address;
+    message[3] = data_length;
 
     // add payload data to message
-    uint8_t data_index = 3;
+    uint8_t data_index = 4;
     for (unsigned int i = 0; i < data_length; i++) {
       message[data_index] = data_stack.back();
       data_stack.pop_back();
