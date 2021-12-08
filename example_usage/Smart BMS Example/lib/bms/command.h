@@ -2,6 +2,13 @@
 #include <protocol.h>
 #include <Vector.h>
 
+struct Generated_Command
+{
+    uint8_t data[100];
+    uint8_t length;
+};
+
+
 class Command{
   private:
     uint8_t read_or_write;
@@ -13,7 +20,6 @@ class Command{
     uint8_t checksum_low; // second checksum byte
     
     uint8_t data_stack[10]; // The payload data
-    Vector<uint8_t> command_buffer; // The complete message
     
     // Get the checksum value for the message
     void update_checksum() {
@@ -40,41 +46,8 @@ class Command{
       return message_length;
     }
 
-    // Generate the command and store it in the command buffer
-    void generateCommand(){
-      // Construct message
-      uint8_t message[get_message_length()];
-      message[0] = START;
-      message[1] = read_or_write;
-      message[2] = register_address;
-      message[3] = data_length;
-
-      // add payload data to message
-      uint8_t data_index = 4;
-      for (unsigned int i = 0; i < data_length; i++) {
-        message[data_index] = data_stack[i];
-        data_index++;
-      }
-
-      // add checksum and end byte
-      update_checksum();
-      message[data_index + 1] = checksum_high;
-      message[data_index + 2] = checksum_low;
-      message[data_index + 3] = END;
-
-      Vector<uint8_t> message_vector;
-      message_vector.setStorage(message, get_message_length(), get_message_length());
-      command_buffer = message_vector;
-    }
-
   public:
     Command(uint8_t read_write = READ){
-      // init storage for vector
-      uint8_t storage_array[5];
-      #ifdef Arduino_h
-        data_stack.setStorage(storage_array);
-      #endif
-
       read_or_write = read_write;
     }
     
@@ -122,8 +95,32 @@ class Command{
     }
 
     // return the complete message vector
-    Vector<uint8_t> get_buffer (){
-      generateCommand();
-      return command_buffer;
+    Generated_Command get_command (){
+      // Construct message
+      Generated_Command new_command;
+      new_command.data[0] = START;
+      new_command.data[1] = read_or_write;
+      new_command.data[2] = register_address;
+      new_command.data[3] = data_length;
+
+      // add payload data to message
+      uint8_t data_index = 4;
+      for (unsigned int i = 0; i < data_length; i++) {
+        new_command.data[data_index] = data_stack[i];
+        data_index++;
+      }
+
+      // add checksum and end byte
+      update_checksum();
+      new_command.data[data_index] = checksum_high;
+      data_index++;
+      new_command.data[data_index] = checksum_low;
+      data_index++;
+      new_command.data[data_index] = END;
+      data_index++;
+
+      new_command.length = data_index;
+
+      return new_command;
     }
 };
