@@ -2,6 +2,7 @@
 #include <SoftwareSerial.h>
 #include <Vector.h>
 #include <protocol.h>
+#include <command.h>
 
 #define USBSerial Serial
 SoftwareSerial BitBangSerial(12, 11);
