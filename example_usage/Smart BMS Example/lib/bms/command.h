@@ -1,63 +1,49 @@
+#include <common_arduino.h>
 #include <protocol.h>
-
-#ifdef FAKE_ARDUINO
-  #include <stdint.h>
-  #include <ArduinoFake.h>
-#endif
-
 #include <Vector.h>
 
 class Command{
   private:
     uint8_t read_or_write;
-    Vector<uint8_t> data_stack;
     uint8_t data_length;
-    uint16_t data_checksum;
     uint8_t register_address;
+
+    // The message checksum is really 16-bits but we buffer it as two bytes
+    uint8_t checksum_high; // first checksum byte
+    uint8_t checksum_low; // second checksum byte
     
-    void updateChecksum() {
+    Vector<uint8_t> data_stack; // The payload data
+    Vector<uint8_t> command_buffer; // The complete message
+    
+    // Get the checksum value for the message
+    void update_checksum() {
       uint8_t vectorSum = register_address;
       for (unsigned int i = 0; i < data_stack.size(); i++) {
         vectorSum += data_stack.at(i);
       }
       // The checksum is simply sum of the payload byte values subtracted from 0x10000 (65536).
-      data_checksum = 0x10000 - vectorSum;
+      uint16_t checksum = 0x10000 - vectorSum;
+      checksum_high=(checksum>>8) & 0xff;
+      checksum_low=checksum & 0xff;
     }
 
-  public:
-    Command(uint8_t read_write = READ){
-      // init storage for vector
-      uint8_t storage_array[5];
-      #ifdef Arduino_h
-        data_stack.setStorage(storage_array);
-      #endif
-
-      read_or_write = read_write;
+    // Get the total number of bytes the message will be
+    uint8_t get_message_length() {
+      // broke this up here for readability
+      uint8_t message_length = 0; // running total
+      message_length ++; // Start byte
+      message_length ++; // Read or write
+      message_length ++; // Payload length
+      message_length += data_length; // Payload
+      message_length +=2; // Checksum
+      message_length ++; // End byte
+      return message_length;
     }
 
-    void sendCommand(){
-      uint8_t message_length = 0;
-
-      // Start byte
-      message_length ++;
-
-      // Read or write
-      message_length ++;
-
-      // Payload length
-      message_length ++;
-
-      // Payload
-      message_length += data_length;
-
-      // Checksum
-      message_length +=2;
-
-      // End Byte
-      message_length++;
-
+    // Generate the command and store it in the command buffer
+    void generateCommand(){
       // Construct message
-      uint8_t message[message_length];
+      uint8_t message[get_message_length()];
       message[0] = START;
       message[1] = read_or_write;
       message[2] = register_address;
@@ -71,26 +57,31 @@ class Command{
         data_index++;
       }
 
-      uint8_t checksum_one, checksum_two;
-      union {
-        uint16_t Word;
-        uint8_t Bytes[2];
-      } both;
-
-      both.Word = data_checksum;
-      checksum_one = both.Bytes[0];
-      checksum_two = both.Bytes[1];
-
-      message[data_index + 1] = checksum_one;
-      message[data_index + 2] = checksum_two;
+      // add checksum and end byte
+      message[data_index + 1] = checksum_high;
+      message[data_index + 2] = checksum_low;
       message[data_index + 3] = END;
 
-      // serial.write(message, message_length);
+      Vector<uint8_t> message_vector;
+      uint8_t storage_array[get_message_length()];
+      message_vector.setStorage(storage_array, get_message_length(), get_message_length());
+      command_buffer = message_vector;
     }
 
+  public:
+    Command(uint8_t read_write = READ){
+      // init storage for vector
+      uint8_t storage_array[5];
+      #ifdef Arduino_h
+        data_stack.setStorage(storage_array);
+      #endif
+
+      read_or_write = read_write;
+    }
+    
     void setRegister(uint8_t address) {
       register_address = address;
-      updateChecksum();
+      update_checksum();
     }
 
     void clearData() {
@@ -102,7 +93,7 @@ class Command{
 
       data_length = 0;
 
-      updateChecksum();
+      update_checksum();
     }
 
     void setData(uint8_t byte1) {
@@ -112,7 +103,7 @@ class Command{
 
       data_stack.push_back(byte1);
 
-      updateChecksum();
+      update_checksum();
     }
 
     void setData(uint8_t byte1, uint8_t byte2) {
@@ -123,7 +114,7 @@ class Command{
       data_stack.push_back(byte2);
       data_stack.push_back(byte1);
 
-      updateChecksum();
+      update_checksum();
     }
 
     void setData(uint8_t byte1, uint8_t byte2, uint8_t byte3) {
@@ -135,7 +126,7 @@ class Command{
       data_stack.push_back(byte2);
       data_stack.push_back(byte1);
 
-      updateChecksum();
+      update_checksum();
     }
 
     void setData(uint8_t byte1, uint8_t byte2, uint8_t byte3, uint8_t byte4) {
@@ -148,6 +139,12 @@ class Command{
       data_stack.push_back(byte2);
       data_stack.push_back(byte1);
 
-      updateChecksum();
+      update_checksum();
+    }
+
+    // return the complete message vector
+    Vector<uint8_t> get_buffer (){
+      generateCommand();
+      return command_buffer;
     }
 };
