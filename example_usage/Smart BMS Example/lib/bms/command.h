@@ -12,14 +12,14 @@ class Command{
     uint8_t checksum_high; // first checksum byte
     uint8_t checksum_low; // second checksum byte
     
-    Vector<uint8_t> data_stack; // The payload data
+    uint8_t data_stack[10]; // The payload data
     Vector<uint8_t> command_buffer; // The complete message
     
     // Get the checksum value for the message
     void update_checksum() {
       uint8_t vectorSum = register_address;
-      for (unsigned int i = 0; i < data_stack.size(); i++) {
-        vectorSum += data_stack.at(i);
+      for (unsigned int i = 0; i < data_length; i++) {
+        vectorSum += data_stack[i];
       }
       // The checksum is simply sum of the payload byte values subtracted from 0x10000 (65536).
       uint16_t checksum = 0x10000 - vectorSum;
@@ -52,19 +52,18 @@ class Command{
       // add payload data to message
       uint8_t data_index = 4;
       for (unsigned int i = 0; i < data_length; i++) {
-        message[data_index] = data_stack.back();
-        data_stack.pop_back();
+        message[data_index] = data_stack[i];
         data_index++;
       }
 
       // add checksum and end byte
+      update_checksum();
       message[data_index + 1] = checksum_high;
       message[data_index + 2] = checksum_low;
       message[data_index + 3] = END;
 
       Vector<uint8_t> message_vector;
-      uint8_t storage_array[get_message_length()];
-      message_vector.setStorage(storage_array, get_message_length(), get_message_length());
+      message_vector.setStorage(message, get_message_length(), get_message_length());
       command_buffer = message_vector;
     }
 
@@ -84,62 +83,42 @@ class Command{
       update_checksum();
     }
 
-    void clearData() {
-        setData();
-    }
-
+    // Manual recursion because I can
     void setData() {
-      data_stack.clear();
-
+      for (unsigned int i = 0; i < 10; i++) {
+        data_stack[i] = 0;
+      }
       data_length = 0;
-
-      update_checksum();
     }
 
-    void setData(uint8_t byte1) {
-      data_stack.clear();
-
+    void setData(uint8_t b0) {
+      setData();
       data_length = 1;
-
-      data_stack.push_back(byte1);
-
-      update_checksum();
+      data_stack[0] = b0;
     }
 
-    void setData(uint8_t byte1, uint8_t byte2) {
-      data_stack.clear();
-
+    void setData(uint8_t b0, uint8_t b1) {
+      setData(b0);
       data_length = 2;
-
-      data_stack.push_back(byte2);
-      data_stack.push_back(byte1);
-
-      update_checksum();
+      data_stack[1] = b1;
     }
 
-    void setData(uint8_t byte1, uint8_t byte2, uint8_t byte3) {
-      data_stack.clear();
-
+    void setData(uint8_t b0, uint8_t b1, uint8_t b2) {
+      setData(b0, b1);
       data_length = 3;
-
-      data_stack.push_back(byte3);
-      data_stack.push_back(byte2);
-      data_stack.push_back(byte1);
-
-      update_checksum();
+      data_stack[2] = b2;
     }
 
-    void setData(uint8_t byte1, uint8_t byte2, uint8_t byte3, uint8_t byte4) {
-      data_stack.clear();
-
+    void setData(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {
+      setData(b0, b1, b2);
       data_length = 4;
+      data_stack[3] = b3;
+    }
 
-      data_stack.push_back(byte4);
-      data_stack.push_back(byte3);
-      data_stack.push_back(byte2);
-      data_stack.push_back(byte1);
-
-      update_checksum();
+    void setData(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4) {
+      setData(b0, b1, b2, b3);
+      data_length = 5;
+      data_stack[4] = b4;
     }
 
     // return the complete message vector
