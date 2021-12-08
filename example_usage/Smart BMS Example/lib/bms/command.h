@@ -33,19 +33,6 @@ class Command{
       checksum_low=checksum & 0xff;
     }
 
-    // Get the total number of bytes the message will be
-    uint8_t get_message_length() {
-      // broke this up here for readability
-      uint8_t message_length = 0; // running total
-      message_length ++; // Start byte
-      message_length ++; // Read or write
-      message_length ++; // Payload length
-      message_length += data_length; // Payload
-      message_length +=2; // Checksum
-      message_length ++; // End byte
-      return message_length;
-    }
-
   public:
     Command(uint8_t read_write = READ){
       read_or_write = read_write;
@@ -53,7 +40,6 @@ class Command{
     
     void setRegister(uint8_t address) {
       register_address = address;
-      update_checksum();
     }
 
     // Manual recursion because I can
