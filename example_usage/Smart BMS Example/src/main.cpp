@@ -1,4 +1,4 @@
-#include <Arduino.h>
+#include <common_arduino.h>
 #include <SoftwareSerial.h>
 #include <Vector.h>
 #include <protocol.h>

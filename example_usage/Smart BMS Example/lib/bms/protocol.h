@@ -1,6 +1,8 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
+#include <common_arduino.h>
+
 // General
 #define START 0xDD
 #define END 0x77
@@ -32,5 +34,8 @@
 // Data Length Bytes
 
 // EEPROM
+
+// Commands
+uint8_t ENTER_FACTORY_MODE_COMMAND[2] = {0x56, 0x78};
 
 #endif
