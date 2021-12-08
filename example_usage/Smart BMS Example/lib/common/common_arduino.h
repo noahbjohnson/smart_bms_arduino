@@ -4,6 +4,6 @@
     #include <ArduinoFake.h>
     #include <stdint.h>
   #endif
-  #else
-    #include <Arduino.h>
+#else
+  #include <Arduino.h>
 #endif

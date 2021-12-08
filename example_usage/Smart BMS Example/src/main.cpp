@@ -1,40 +1,34 @@
-#include <common_arduino.h>
-#include <SoftwareSerial.h>
-#include <Vector.h>
-#include <protocol.h>
-#include <command.h>
+#include <main.h>
 
-#define USBSerial Serial
-SoftwareSerial BitBangSerial(12, 11);
-#define BMSSerial BitBangSerial 
-
-void setup() {
+void setup()
+{
   USBSerial.begin(115200);
   BMSSerial.begin(9600);
 }
 
-void loop() {
+void loop()
+{
   handshake();
 }
-
 
 /**
  *                                              UTILITY FUNCTIONS
  * */
-
 
 // Flush the serial buffer
 void flush()
 {
   delay(100);
   while (BMSSerial.available() > 0)
-  { BMSSerial.read();
+  {
+    BMSSerial.read();
   }
   delay(50);
 }
 
 // connect and disconect twice
-void handshake() {
+void handshake()
+{
   write_request_start();
   write_request_end();
   write_request_start();
@@ -62,4 +56,3 @@ void write_request_end()
   uint8_t data[9] = {START, WRITE, EXIT_FACTORY_MODE, 0x02, 0x00, 0x00, 0xFF, 0xFD, END};
   BMSSerial.write(data, 9);
 }
-
