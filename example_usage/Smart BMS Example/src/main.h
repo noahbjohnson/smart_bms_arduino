@@ -6,7 +6,7 @@
 
 #define USBSerial Serial
 SoftwareSerial BitBangSerial(12, 11);
-#define BMSSerial BitBangSerial 
+#define BMSSerial BitBangSerial
 
 void write_request_start();
 void write_request_end();
