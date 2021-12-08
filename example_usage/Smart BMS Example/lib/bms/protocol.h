@@ -1,6 +1,5 @@
-/**
- * 
- * */
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
 
 // General
 #define START 0xDD
@@ -33,3 +32,5 @@
 // Data Length Bytes
 
 // EEPROM
+
+#endif
